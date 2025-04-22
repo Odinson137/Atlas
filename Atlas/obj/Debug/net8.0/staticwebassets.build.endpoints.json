@@ -4019,6 +4019,88 @@
           "Value": "lib/bootstrap/dist/js/bootstrap.js"
         }
       ]
+    },
+    {
+      "Route": "nasty-doorbell-ringing_gj4l4be_.80tajn0zh7.mp3",
+      "AssetFile": "nasty-doorbell-ringing_gj4l4be_.mp3",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "290903"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "audio/mpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 22 Apr 2025 16:39:09 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "80tajn0zh7"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk="
+        },
+        {
+          "Name": "label",
+          "Value": "nasty-doorbell-ringing_gj4l4be_.mp3"
+        }
+      ]
+    },
+    {
+      "Route": "nasty-doorbell-ringing_gj4l4be_.mp3",
+      "AssetFile": "nasty-doorbell-ringing_gj4l4be_.mp3",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "290903"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "audio/mpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 22 Apr 2025 16:39:09 GMT"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk="
+        }
+      ]
     }
   ]
 }

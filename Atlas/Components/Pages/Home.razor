@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/{Test:int?}"
 @using System.Text.Json
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -13,23 +13,23 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label">Дата поездки:</label>
-                <input type="date" @bind-value="TripDate" class="form-control" />
+                <input type="date" @bind-value="TripDate" class="form-control"/>
             </div>
 
             <div class="col-md-6 mb-3">
                 <label class="form-label">Количество пассажиров:</label>
-                <input type="number" @bind="Passengers" min="1" class="form-control" />
+                <input type="number" @bind="Passengers" min="1" class="form-control"/>
             </div>
         </div>
 
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label class="form-label">Время начала:</label>
-                <input type="time" @bind="StartTime" class="form-control" />
+                <input type="time" @bind="StartTime" class="form-control"/>
             </div>
             <div class="col-md-6 mb-3">
                 <label class="form-label">Время окончания:</label>
-                <input type="time" @bind="EndTime" class="form-control" />
+                <input type="time" @bind="EndTime" class="form-control"/>
             </div>
         </div>
 
@@ -54,360 +54,402 @@
 
         <div class="mb-3">
             <label class="form-label">Интервал обновления (секунды):</label>
-            <input type="number" @bind="RefreshInterval" min="10" class="form-control" />
+            <input type="number" @bind="RefreshInterval" min="10" class="form-control"/>
         </div>
 
         <div class="text-center">
+            @if (!IsFetching)
+            {
             <button class="btn btn-primary me-2" @onclick="StartFetching">Начать поиск</button>
+            }
+            @if (IsFetching)
+            {
             <button class="btn btn-secondary me-2" @onclick="StopFetching">Остановить поиск</button>
+            }
             @if (IsSoundPlaying)
             {
-                <button class="btn btn-warning" @onclick="StopSound">Остановить звук</button>
+            <button class="btn btn-warning" @onclick="StopSound">Остановить звук</button>
             }
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="@GetAtlasLink()" target="_blank" class="btn btn-info">Открыть на Atlas</a>
         </div>
     </div>
 
     @if (ErrorMessage != null)
     {
-        <div class="alert alert-danger">
-            @ErrorMessage
-        </div>
+    <div class="alert alert-danger">
+        @ErrorMessage
+    </div>
     }
 
     @if (Trips.Any())
     {
-        <h3 class="mb-3">Найденные маршрутки</h3>
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Отправление</th>
-                            <th>Прибытие</th>
-                            <th>Автобус</th>
-                            <th>Свободные места</th>
-                            <th>Цена (BYN)</th>
-                            <th>Действие</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var trip in Trips)
-                        {
-                            <tr>
-                                <td>@trip.Departure</td>
-                                <td>@trip.Arrival</td>
-                                <td>@trip.Bus.Mark @trip.Bus.Model (@trip.Bus.Color.Name)</td>
-                                <td>@trip.FreeSeats</td>
-                                <td>@trip.Price</td>
-                                <td>
-                                    <a href="@TripLink" target="_blank" class="btn btn-info btn-sm">Перейти к маршруту</a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+    <h3 class="mb-3">Найденные маршрутки</h3>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>Отправление</th>
+                    <th>Прибытие</th>
+                    <th>Автобус</th>
+                    <th>Свободные места</th>
+                    <th>Цена (BYN)</th>
+                    <th>Действие</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var trip in Trips)
+                {
+                <tr>
+                    <td>@trip.Departure</td>
+                    <td>@trip.Arrival</td>
+                    <td>@trip.Bus.Mark @trip.Bus.Model (@trip.Bus.Color.Name)</td>
+                    <td>@trip.FreeSeats</td>
+                    <td>@trip.Price</td>
+                    <td>
+                        <a href="@GetAtlasLink()" target="_blank" class="btn btn-info btn-sm">Перейти к маршруту</a>
+                    </td>
+                </tr>
+                }
+                </tbody>
+            </table>
         </div>
+    </div>
+    }
+    else if (!Trips.Any() && IsFetching)
+    {
+    <div class="alert alert-warning text-center">
+        Поиск выполняется... Пока ничего не найдено.
+    </div>
+    }
+    else if (!Trips.Any() && !IsFetching && HasSearched)
+    {
+    <div class="alert alert-warning text-center">
+        Ничего не найдено по заданным фильтрам.
+    </div>
     }
 </div>
 
 @code {
-    private DateTime TripDate { get; set; } = DateTime.Today;
-    private TimeOnly StartTime { get; set; } = TimeOnly.Parse("00:00");
-    private TimeOnly EndTime { get; set; } = TimeOnly.Parse("23:59");
-    private int Passengers { get; set; } = 1;
-    private string FromCity { get; set; } = "c630166"; // Березовка
-    private string ToCity { get; set; } = "c625144"; // Минск
-    private int RefreshInterval { get; set; } = 60; // Default 60 seconds
-    private List<Ride> Trips { get; set; } = new();
-    private string? ErrorMessage { get; set; }
-    private bool IsFetching { get; set; }
-    private bool HasNotified { get; set; }
-    private bool IsSoundPlaying { get; set; }
-    private CancellationTokenSource? cts;
-    private readonly string TripLink = "https://atlasbus.by/Маршруты/Берёзовка/Минск?date=2025-04-24&passengers=1&from=c630166&to=c625144";
+[Parameter] public int? Test { get; set; }
+private DateTime TripDate { get; set; } = DateTime.Today;
+private TimeOnly StartTime { get; set; } = TimeOnly.Parse("00:00");
+private TimeOnly EndTime { get; set; } = TimeOnly.Parse("23:59");
+private int Passengers { get; set; } = 1;
+private string FromCity { get; set; } = "c630166"; // Березовка
+private string ToCity { get; set; } = "c625144"; // Минск
+private int RefreshInterval { get; set; } = 60; // Default 60 seconds
+private List<Ride> Trips { get; set; } = new();
+private string? ErrorMessage { get; set; }
+private bool IsFetching { get; set; }
+private bool HasNotified { get; set; }
+private bool HasSearched { get; set; }
+private bool IsSoundPlaying { get; set; }
+private CancellationTokenSource? cts;
 
-    #region
-    // Модели для JSON
-    private class SearchResponse
-    {
-        public List<CalendarEntry> Calendar { get; set; } = new();
-        public List<Ride> Rides { get; set; } = new();
-    }
+private readonly Dictionary<string, string> CityNames = new()
+{
+{ "c630166", "Берёзовка" },
+{ "c625144", "Минск" },
+{ "c626081", "Лида" }
+};
 
-    private class CalendarEntry
-    {
-        public string Date { get; set; } = string.Empty;
-        public List<MinPrice> MinPrices { get; set; } = new();
-        public int RideCount { get; set; }
-    }
+private string GetAtlasLink()
+{
+var fromCityName = CityNames[FromCity];
+var toCityName = CityNames[ToCity];
+var formattedDate = TripDate.ToString("yyyy-MM-dd");
+return $"https://atlasbus.by/Маршруты/{fromCityName}/{toCityName}?date={formattedDate}&passengers={Passengers}&from={FromCity}&to={ToCity}";
+}
 
-    private class MinPrice
-    {
-        public string Currency { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public decimal MaxPrice { get; set; }
-    }
+#region
 
-    private class Ride
-    {
-        public string Arrival { get; set; } = string.Empty;
-        public AtlasMeta AtlasMeta { get; set; } = new();
-        public List<string> Benefits { get; set; } = new();
-        public List<string> BookFields { get; set; } = new();
-        public Bus Bus { get; set; } = new();
-        public string Carrier { get; set; } = string.Empty;
-        public string CarrierID { get; set; } = string.Empty;
-        public string Connector { get; set; } = string.Empty;
-        public string Currency { get; set; } = string.Empty;
-        public string Departure { get; set; } = string.Empty;
-        public List<Stop> DischargeStops { get; set; } = new();
-        public bool DynamicMode { get; set; }
-        public int FlightPopular { get; set; }
-        public int FreeSeats { get; set; }
-        public List<int> FreeSeatsCount { get; set; } = new();
-        public Freighter Freighter { get; set; } = new();
-        public Location From { get; set; } = new();
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public bool OnlineRefund { get; set; }
-        public string Partner { get; set; } = string.Empty;
-        public string PartnerName { get; set; } = string.Empty;
-        public List<string> PaymentTypes { get; set; } = new();
-        public List<Stop> PickupStops { get; set; } = new();
-        public decimal Price { get; set; }
-        public string? SaasId { get; set; }
-        public List<string> SaleTypes { get; set; } = new();
-        public string Status { get; set; } = string.Empty;
-        public Location To { get; set; } = new();
-        public int ValidBefore { get; set; }
-        public ServiceInfo Animals { get; set; } = new();
-        public ServiceInfo Luggage { get; set; } = new();
-        public Dictionary<string, object> CarpoolMeta { get; set; } = new();
-        public List<string> CarrierPhones { get; set; } = new();
-        public Dictionary<string, object> Driver { get; set; } = new();
-        public DynamicConfig DynamicConfig { get; set; } = new();
-        public decimal Fee { get; set; }
-        public LegalInfo Legal { get; set; } = new();
-        public decimal OnlinePrice { get; set; }
-        public string RefundConditions { get; set; } = string.Empty;
-        public string RideType { get; set; } = string.Empty;
-        public string RouteName { get; set; } = string.Empty;
-        public int TicketLimit { get; set; }
-        public FrameInfo Frame { get; set; } = new();
-        public int Distance { get; set; }
-        public Coordinates DepartureCoords { get; set; } = new();
-        public Coordinates ArrivalCoords { get; set; } = new();
-        public string ExtraDescription { get; set; } = string.Empty;
-    }
+// Модели для JSON
+private class SearchResponse
+{
+public List<CalendarEntry> Calendar { get; set; } = new();
+public List<Ride> Rides { get; set; } = new();
+}
 
-    private class AtlasMeta
-    {
-        public MilesInfo Miles { get; set; } = new();
-    }
+private class CalendarEntry
+{
+public string Date { get; set; } = string.Empty;
+public List<MinPrice> MinPrices { get; set; } = new();
+public int RideCount { get; set; }
+}
 
-    private class MilesInfo
-    {
-        public MilesItem Item { get; set; } = new();
-        public string State { get; set; } = string.Empty;
-        public decimal Cash { get; set; }
-        public decimal Card { get; set; }
-    }
+private class MinPrice
+{
+public string Currency { get; set; } = string.Empty;
+public decimal Price { get; set; }
+public decimal MaxPrice { get; set; }
+}
 
-    private class MilesItem
-    {
-        public string Currency { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public decimal PriceOnline { get; set; }
-        public decimal Rate { get; set; }
-        public decimal RateCard { get; set; }
-    }
+private class Ride
+{
+public string Arrival { get; set; } = string.Empty;
+public AtlasMeta AtlasMeta { get; set; } = new();
+public List<string> Benefits { get; set; } = new();
+public List<string> BookFields { get; set; } = new();
+public Bus Bus { get; set; } = new();
+public string Carrier { get; set; } = string.Empty;
+public string CarrierID { get; set; } = string.Empty;
+public string Connector { get; set; } = string.Empty;
+public string Currency { get; set; } = string.Empty;
+public string Departure { get; set; } = string.Empty;
+public List<Stop> DischargeStops { get; set; } = new();
+public bool DynamicMode { get; set; }
+public int FlightPopular { get; set; }
+public int FreeSeats { get; set; }
+public List<int> FreeSeatsCount { get; set; } = new();
+public Freighter Freighter { get; set; } = new();
+public Location From { get; set; } = new();
+public string Id { get; set; } = string.Empty;
+public string Name { get; set; } = string.Empty;
+public bool OnlineRefund { get; set; }
+public string Partner { get; set; } = string.Empty;
+public string PartnerName { get; set; } = string.Empty;
+public List<string> PaymentTypes { get; set; } = new();
+public List<Stop> PickupStops { get; set; } = new();
+public decimal Price { get; set; }
+public string? SaasId { get; set; }
+public List<string> SaleTypes { get; set; } = new();
+public string Status { get; set; } = string.Empty;
+public Location To { get; set; } = new();
+public int ValidBefore { get; set; }
+public ServiceInfo Animals { get; set; } = new();
+public ServiceInfo Luggage { get; set; } = new();
+public Dictionary<string, object> CarpoolMeta { get; set; } = new();
+public List<string> CarrierPhones { get; set; } = new();
+public Dictionary<string, object> Driver { get; set; } = new();
+public DynamicConfig DynamicConfig { get; set; } = new();
+public decimal Fee { get; set; }
+public LegalInfo Legal { get; set; } = new();
+public decimal OnlinePrice { get; set; }
+public string RefundConditions { get; set; } = string.Empty;
+public string RideType { get; set; } = string.Empty;
+public string RouteName { get; set; } = string.Empty;
+public int TicketLimit { get; set; }
+public FrameInfo Frame { get; set; } = new();
+public int Distance { get; set; }
+public Coordinates DepartureCoords { get; set; } = new();
+public Coordinates ArrivalCoords { get; set; } = new();
+public string ExtraDescription { get; set; } = string.Empty;
+}
 
-    private class Bus
-    {
-        public string Mark { get; set; } = string.Empty;
-        public string Model { get; set; } = string.Empty;
-        public string Reg { get; set; } = string.Empty;
-        public string Branding { get; set; } = string.Empty;
-        public Color Color { get; set; } = new();
-    }
+private class AtlasMeta
+{
+public MilesInfo Miles { get; set; } = new();
+}
 
-    private class Color
-    {
-        public string Code { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-    }
+private class MilesInfo
+{
+public MilesItem Item { get; set; } = new();
+public string State { get; set; } = string.Empty;
+public decimal Cash { get; set; }
+public decimal Card { get; set; }
+}
 
-    private class Stop
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Desc { get; set; } = string.Empty;
-        public string Info { get; set; } = string.Empty;
-        public double Longitude { get; set; }
-        public double Latitude { get; set; }
-        public bool Important { get; set; }
-        public string Timezone { get; set; } = string.Empty;
-        public bool Dynamic { get; set; }
-        public bool Seating { get; set; }
-        public string Datetime { get; set; } = string.Empty;
-    }
+private class MilesItem
+{
+public string Currency { get; set; } = string.Empty;
+public decimal Price { get; set; }
+public decimal PriceOnline { get; set; }
+public decimal Rate { get; set; }
+public decimal RateCard { get; set; }
+}
 
-    private class Freighter
-    {
-        public int Id { get; set; }
-        public string Authority { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string RegDate { get; set; } = string.Empty;
-        public string Unp { get; set; } = string.Empty;
-        public string WorkingTime { get; set; } = string.Empty;
-    }
+private class Bus
+{
+public string Mark { get; set; } = string.Empty;
+public string Model { get; set; } = string.Empty;
+public string Reg { get; set; } = string.Empty;
+public string Branding { get; set; } = string.Empty;
+public Color Color { get; set; } = new();
+}
 
-    private class Location
-    {
-        public string Id { get; set; } = string.Empty;
-        public string Desc { get; set; } = string.Empty;
-        public string Timezone { get; set; } = string.Empty;
-        public string CountryCode { get; set; } = string.Empty;
-    }
+private class Color
+{
+public string Code { get; set; } = string.Empty;
+public string Name { get; set; } = string.Empty;
+}
 
-    private class ServiceInfo
-    {
-        public bool Available { get; set; }
-        public string Description { get; set; } = string.Empty;
-    }
+private class Stop
+{
+public string Id { get; set; } = string.Empty;
+public string Desc { get; set; } = string.Empty;
+public string Info { get; set; } = string.Empty;
+public double Longitude { get; set; }
+public double Latitude { get; set; }
+public bool Important { get; set; }
+public string Timezone { get; set; } = string.Empty;
+public bool Dynamic { get; set; }
+public bool Seating { get; set; }
+public string Datetime { get; set; } = string.Empty;
+}
 
-    private class DynamicConfig
-    {
-        public int PrepareTime { get; set; }
-    }
+private class Freighter
+{
+public int Id { get; set; }
+public string Authority { get; set; } = string.Empty;
+public string Name { get; set; } = string.Empty;
+public string RegDate { get; set; } = string.Empty;
+public string Unp { get; set; } = string.Empty;
+public string WorkingTime { get; set; } = string.Empty;
+}
 
-    private class LegalInfo
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public string Tin { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-    }
+private class Location
+{
+public string Id { get; set; } = string.Empty;
+public string Desc { get; set; } = string.Empty;
+public string Timezone { get; set; } = string.Empty;
+public string CountryCode { get; set; } = string.Empty;
+}
 
-    private class FrameInfo
-    {
-        public bool Use { get; set; }
-    }
+private class ServiceInfo
+{
+public bool Available { get; set; }
+public string Description { get; set; } = string.Empty;
+}
 
-    private class Coordinates
-    {
-        public double Lat { get; set; }
-        public double Lng { get; set; }
-    }
-    #endregion
+private class DynamicConfig
+{
+public int PrepareTime { get; set; }
+}
 
-    private async Task StartFetching()
-    {
-        if (IsFetching) return;
-        IsFetching = true;
-        HasNotified = false;
-        cts = new CancellationTokenSource();
+private class LegalInfo
+{
+public string Name { get; set; } = string.Empty;
+public string Country { get; set; } = string.Empty;
+public string Tin { get; set; } = string.Empty;
+public string Address { get; set; } = string.Empty;
+public string Phone { get; set; } = string.Empty;
+}
 
-        try
-        {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                await FetchTrips();
-                await Task.Delay(RefreshInterval * 1000, cts.Token);
-            }
-        }
-        catch (TaskCanceledException)
-        {
-            // Ожидаемое исключение при остановке
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Ошибка при поиске: {ex.Message}";
-        }
-        finally
-        {
-            IsFetching = false;
-        }
-    }
+private class FrameInfo
+{
+public bool Use { get; set; }
+}
 
-    private void StopFetching()
-    {
-        cts?.Cancel();
-        IsFetching = false;
-        HasNotified = false;
-    }
+private class Coordinates
+{
+public double Lat { get; set; }
+public double Lng { get; set; }
+}
 
-    private async Task FetchTrips()
-    {
-        try
-        {
-            ErrorMessage = null;
-            var formattedDate = TripDate.ToString("yyyy-MM-dd");
-            var url = $"https://atlasbus.by/api/search?from_id={FromCity}&to_id={ToCity}&calendar_width=30&date={formattedDate}&passengers={Passengers}";
-            Console.WriteLine(url);
-            var response = await Http.GetAsync(url);
+#endregion
 
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Ошибка HTTP: {response.StatusCode}");
-            }
+private async Task StartFetching()
+{
+if (IsFetching) return;
+IsFetching = true;
+HasNotified = false;
+HasSearched = false;
+cts = new CancellationTokenSource();
 
-            var content = await response.Content.ReadAsStringAsync();
-            var searchResponse = JsonSerializer.Deserialize<SearchResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+try
+{
+while (!cts.Token.IsCancellationRequested)
+{
+await FetchTrips();
+await Task.Delay(RefreshInterval * 1000, cts.Token);
+}
+}
+catch (TaskCanceledException)
+{
+// Ожидаемое исключение при остановке
+}
+catch (Exception ex)
+{
+ErrorMessage = $"Ошибка при поиске: {ex.Message}";
+}
+finally
+{
+IsFetching = false;
+HasSearched = true;
+}
+}
 
-            if (searchResponse == null || searchResponse.Rides == null)
-            {
-                throw new Exception("Не удалось распарсить ответ от API.");
-            }
+private void StopFetching()
+{
+cts?.Cancel();
+IsFetching = false;
+HasNotified = false;
+HasSearched = true;
+}
 
-            var newTrips = new List<Ride>();
-            foreach (var ride in searchResponse.Rides)
-            {
-                if (ride.FreeSeats > 0)
-                {
-                    var departure = DateTime.Parse(ride.Departure);
-                    var arrival = DateTime.Parse(ride.Arrival);
+private async Task FetchTrips()
+{
+try
+{
+ErrorMessage = null;
+var formattedDate = TripDate.ToString("yyyy-MM-dd");
+var url = $"https://atlasbus.by/api/search?from_id={FromCity}&to_id={ToCity}&calendar_width=30&date={formattedDate}&passengers={Passengers}";
+Console.WriteLine(url);
+var response = await Http.GetAsync(url);
 
-                    // Фильтрация по диапазону времени
-                    var startTime = StartTime.ToTimeSpan();
-                    var endTime = EndTime.ToTimeSpan();
-                    var departureTime = departure.TimeOfDay;
+if (!response.IsSuccessStatusCode)
+{
+throw new Exception($"Ошибка HTTP: {response.StatusCode}");
+}
 
-                    if (departureTime >= startTime && departureTime <= endTime)
-                    {
-                        ride.Departure = departure.ToString("yyyy-MM-dd HH:mm");
-                        ride.Arrival = arrival.ToString("yyyy-MM-dd HH:mm");
-                        newTrips.Add(ride);
-                    }
-                }
-            }
+var content = await response.Content.ReadAsStringAsync();
+var searchResponse = JsonSerializer.Deserialize<SearchResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            // Проверяем, есть ли новые поездки и уведомляли ли уже
-            if (newTrips.Any() && !HasNotified)
-            {
-                // Проигрываем звук уведомления
-                await JS.InvokeVoidAsync("playNotificationSound");
-                IsSoundPlaying = true;
-                HasNotified = true;
-                cts?.Cancel(); // Останавливаем поиск после уведомления
-            }
+if (searchResponse == null || searchResponse.Rides == null)
+{
+throw new Exception("Не удалось распарсить ответ от API.");
+}
 
-            Trips = newTrips;
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Ошибка при поиске: {ex.Message}";
-            StateHasChanged();
-        }
-    }
+var newTrips = new List<Ride>();
+foreach (var ride in searchResponse.Rides)
+{
+if (ride.FreeSeats > 0)
+{
+var departure = DateTime.Parse(ride.Departure);
+var arrival = DateTime.Parse(ride.Arrival);
 
-    private async Task StopSound()
-    {
-        await JS.InvokeVoidAsync("stopNotificationSound");
-        IsSoundPlaying = false;
-    }
+// Фильтрация по диапазону времени
+var startTime = StartTime.ToTimeSpan();
+var endTime = EndTime.ToTimeSpan();
+var departureTime = departure.TimeOfDay;
+
+if (departureTime >= startTime && departureTime <= endTime)
+{
+ride.Departure = departure.ToString("yyyy-MM-dd HH:mm");
+ride.Arrival = arrival.ToString("yyyy-MM-dd HH:mm");
+newTrips.Add(ride);
+}
+}
+}
+
+// Проверяем, есть ли новые поездки и уведомляли ли уже
+if (newTrips.Any() && !HasNotified)
+{
+// Проигрываем звук уведомления
+await JS.InvokeVoidAsync("playNotificationSound");
+IsSoundPlaying = true;
+HasNotified = true;
+}
+
+Trips = newTrips;
+StateHasChanged();
+}
+catch (Exception ex)
+{
+ErrorMessage = $"Ошибка при поиске: {ex.Message}";
+StateHasChanged();
+}
+}
+
+private async Task StopSound()
+{
+await JS.InvokeVoidAsync("stopNotificationSound");
+IsSoundPlaying = false;
+}
 }
 
 <style>
@@ -524,21 +566,21 @@
         color: #c0392b;
         border: none;
     }
+
+    .alert-warning {
+        border-radius: 8px;
+        background-color: #fff3cd;
+        color: #856404;
+        border: none;
+    }
 </style>
 
 <script>
     let audio = null;
 
-    window.addBootstrap = function () {
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
-        document.head.appendChild(link);
-    };
-
     window.playNotificationSound = function () {
-        audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-        audio.play().catch(function(error) {
+        audio = new Audio('nasty-doorbell-ringing_gj4l4be_.mp3');
+        audio.play().catch(function (error) {
             console.log("Error playing sound: ", error);
         });
     };

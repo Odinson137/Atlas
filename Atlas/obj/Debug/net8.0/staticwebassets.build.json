@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "oCC4VHZP8ZTl5NVX4KPjtTJ6MT0tyK434O0niASSGvk=",
+  "Hash": "ovGmW0N/A4nzQSgiUdsCWazT7l9Gq9M50jFjR8Hv9L0=",
   "Source": "Atlas",
   "BasePath": "_content/Atlas",
   "Mode": "Default",
@@ -1065,6 +1065,27 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map"
+    },
+    {
+      "Identity": "C:\\Users\\buryy\\RiderProjects\\Atlas\\Atlas\\wwwroot\\nasty-doorbell-ringing_gj4l4be_.mp3",
+      "SourceId": "Atlas",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\buryy\\RiderProjects\\Atlas\\Atlas\\wwwroot\\",
+      "BasePath": "_content/Atlas",
+      "RelativePath": "nasty-doorbell-ringing_gj4l4be_#[.{fingerprint}]?.mp3",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "Fingerprint": "80tajn0zh7",
+      "Integrity": "WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\nasty-doorbell-ringing_gj4l4be_.mp3"
     }
   ],
   "Endpoints": [
@@ -5165,6 +5186,88 @@
         {
           "Name": "integrity",
           "Value": "sha256-vqK8KwEVuWidx0Ddm5m5LyBriPDPl9TcjrKZQhkFSVA="
+        }
+      ]
+    },
+    {
+      "Route": "nasty-doorbell-ringing_gj4l4be_.80tajn0zh7.mp3",
+      "AssetFile": "C:\\Users\\buryy\\RiderProjects\\Atlas\\Atlas\\wwwroot\\nasty-doorbell-ringing_gj4l4be_.mp3",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "290903"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "audio/mpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 22 Apr 2025 16:39:09 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "max-age=31536000, immutable"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "fingerprint",
+          "Value": "80tajn0zh7"
+        },
+        {
+          "Name": "label",
+          "Value": "nasty-doorbell-ringing_gj4l4be_.mp3"
+        },
+        {
+          "Name": "integrity",
+          "Value": "sha256-WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk="
+        }
+      ]
+    },
+    {
+      "Route": "nasty-doorbell-ringing_gj4l4be_.mp3",
+      "AssetFile": "C:\\Users\\buryy\\RiderProjects\\Atlas\\Atlas\\wwwroot\\nasty-doorbell-ringing_gj4l4be_.mp3",
+      "Selectors": [],
+      "ResponseHeaders": [
+        {
+          "Name": "Accept-Ranges",
+          "Value": "bytes"
+        },
+        {
+          "Name": "Content-Length",
+          "Value": "290903"
+        },
+        {
+          "Name": "Content-Type",
+          "Value": "audio/mpeg"
+        },
+        {
+          "Name": "ETag",
+          "Value": "\"WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=\""
+        },
+        {
+          "Name": "Last-Modified",
+          "Value": "Tue, 22 Apr 2025 16:39:09 GMT"
+        },
+        {
+          "Name": "Cache-Control",
+          "Value": "no-cache"
+        }
+      ],
+      "EndpointProperties": [
+        {
+          "Name": "integrity",
+          "Value": "sha256-WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk="
         }
       ]
     }

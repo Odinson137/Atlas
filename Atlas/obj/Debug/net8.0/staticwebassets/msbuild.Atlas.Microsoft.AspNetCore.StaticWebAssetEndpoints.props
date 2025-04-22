@@ -588,5 +588,17 @@
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"u9q1upor1n"},{"Name":"integrity","Value":"sha256-vqK8KwEVuWidx0Ddm5m5LyBriPDPl9TcjrKZQhkFSVA="},{"Name":"label","Value":"_content/Atlas/lib/bootstrap/dist/js/bootstrap.js"}]]]></EndpointProperties>
       <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"149895"},{"Name":"Content-Type","Value":"text/javascript"},{"Name":"ETag","Value":"\u0022vqK8KwEVuWidx0Ddm5m5LyBriPDPl9TcjrKZQhkFSVA=\u0022"},{"Name":"Last-Modified","Value":"Tue, 22 Apr 2025 13:52:18 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/Atlas/nasty-doorbell-ringing_gj4l4be_.80tajn0zh7.mp3">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\nasty-doorbell-ringing_gj4l4be_.mp3'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"80tajn0zh7"},{"Name":"integrity","Value":"sha256-WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk="},{"Name":"label","Value":"_content/Atlas/nasty-doorbell-ringing_gj4l4be_.mp3"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"290903"},{"Name":"Content-Type","Value":"audio/mpeg"},{"Name":"ETag","Value":"\u0022WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=\u0022"},{"Name":"Last-Modified","Value":"Tue, 22 Apr 2025 16:39:09 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/Atlas/nasty-doorbell-ringing_gj4l4be_.mp3">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\nasty-doorbell-ringing_gj4l4be_.mp3'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"290903"},{"Name":"Content-Type","Value":"audio/mpeg"},{"Name":"ETag","Value":"\u0022WCBDGFnZ95x1odR1TKsEJyKjxbHZVrBWX6AFmyiBRhk=\u0022"},{"Name":"Last-Modified","Value":"Tue, 22 Apr 2025 16:39:09 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
   </ItemGroup>
 </Project>

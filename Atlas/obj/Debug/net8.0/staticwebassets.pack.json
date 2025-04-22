@@ -197,6 +197,10 @@
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map"
     },
     {
+      "Id": "C:\\Users\\buryy\\RiderProjects\\Atlas\\Atlas\\wwwroot\\nasty-doorbell-ringing_gj4l4be_.mp3",
+      "PackagePath": "staticwebassets\\nasty-doorbell-ringing_gj4l4be_.mp3"
+    },
+    {
       "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.Atlas.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
     },
