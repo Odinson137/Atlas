@@ -1,0 +1,551 @@
+﻿@page "/"
+@using System.Text.Json
+@inject HttpClient Http
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Поиск Маршруток</PageTitle>
+
+<div class="container">
+    <h1 class="text-center mb-4">Поиск Маршруток</h1>
+
+    <div class="card shadow-sm p-4 mb-4">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Дата поездки:</label>
+                <input type="date" @bind-value="TripDate" class="form-control" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Количество пассажиров:</label>
+                <input type="number" @bind="Passengers" min="1" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Время начала:</label>
+                <input type="time" @bind="StartTime" class="form-control" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Время окончания:</label>
+                <input type="time" @bind="EndTime" class="form-control" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Откуда:</label>
+                <select @bind="FromCity" class="form-control">
+                    <option value="c630166">Березовка</option>
+                    <option value="c625144">Минск</option>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Куда:</label>
+                <select @bind="ToCity" class="form-control">
+                    <option value="c625144">Минск</option>
+                    <option value="c630166">Березовка</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Интервал обновления (секунды):</label>
+            <input type="number" @bind="RefreshInterval" min="10" class="form-control" />
+        </div>
+
+        <div class="text-center">
+            <button class="btn btn-primary me-2" @onclick="StartFetching">Начать поиск</button>
+            <button class="btn btn-secondary me-2" @onclick="StopFetching">Остановить поиск</button>
+            @if (IsSoundPlaying)
+            {
+                <button class="btn btn-warning" @onclick="StopSound">Остановить звук</button>
+            }
+        </div>
+    </div>
+
+    @if (ErrorMessage != null)
+    {
+        <div class="alert alert-danger">
+            @ErrorMessage
+        </div>
+    }
+
+    @if (Trips.Any())
+    {
+        <h3 class="mb-3">Найденные маршрутки</h3>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Отправление</th>
+                            <th>Прибытие</th>
+                            <th>Автобус</th>
+                            <th>Свободные места</th>
+                            <th>Цена (BYN)</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var trip in Trips)
+                        {
+                            <tr>
+                                <td>@trip.Departure</td>
+                                <td>@trip.Arrival</td>
+                                <td>@trip.Bus.Mark @trip.Bus.Model (@trip.Bus.Color.Name)</td>
+                                <td>@trip.FreeSeats</td>
+                                <td>@trip.Price</td>
+                                <td>
+                                    <a href="@TripLink" target="_blank" class="btn btn-info btn-sm">Перейти к маршруту</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private DateTime TripDate { get; set; } = DateTime.Today;
+    private TimeOnly StartTime { get; set; } = TimeOnly.Parse("00:00");
+    private TimeOnly EndTime { get; set; } = TimeOnly.Parse("23:59");
+    private int Passengers { get; set; } = 1;
+    private string FromCity { get; set; } = "c630166"; // Березовка
+    private string ToCity { get; set; } = "c625144"; // Минск
+    private int RefreshInterval { get; set; } = 60; // Default 60 seconds
+    private List<Ride> Trips { get; set; } = new();
+    private string? ErrorMessage { get; set; }
+    private bool IsFetching { get; set; }
+    private bool HasNotified { get; set; }
+    private bool IsSoundPlaying { get; set; }
+    private CancellationTokenSource? cts;
+    private readonly string TripLink = "https://atlasbus.by/Маршруты/Берёзовка/Минск?date=2025-04-24&passengers=1&from=c630166&to=c625144";
+
+    #region
+    // Модели для JSON
+    private class SearchResponse
+    {
+        public List<CalendarEntry> Calendar { get; set; } = new();
+        public List<Ride> Rides { get; set; } = new();
+    }
+
+    private class CalendarEntry
+    {
+        public string Date { get; set; } = string.Empty;
+        public List<MinPrice> MinPrices { get; set; } = new();
+        public int RideCount { get; set; }
+    }
+
+    private class MinPrice
+    {
+        public string Currency { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public decimal MaxPrice { get; set; }
+    }
+
+    private class Ride
+    {
+        public string Arrival { get; set; } = string.Empty;
+        public AtlasMeta AtlasMeta { get; set; } = new();
+        public List<string> Benefits { get; set; } = new();
+        public List<string> BookFields { get; set; } = new();
+        public Bus Bus { get; set; } = new();
+        public string Carrier { get; set; } = string.Empty;
+        public string CarrierID { get; set; } = string.Empty;
+        public string Connector { get; set; } = string.Empty;
+        public string Currency { get; set; } = string.Empty;
+        public string Departure { get; set; } = string.Empty;
+        public List<Stop> DischargeStops { get; set; } = new();
+        public bool DynamicMode { get; set; }
+        public int FlightPopular { get; set; }
+        public int FreeSeats { get; set; }
+        public List<int> FreeSeatsCount { get; set; } = new();
+        public Freighter Freighter { get; set; } = new();
+        public Location From { get; set; } = new();
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public bool OnlineRefund { get; set; }
+        public string Partner { get; set; } = string.Empty;
+        public string PartnerName { get; set; } = string.Empty;
+        public List<string> PaymentTypes { get; set; } = new();
+        public List<Stop> PickupStops { get; set; } = new();
+        public decimal Price { get; set; }
+        public string? SaasId { get; set; }
+        public List<string> SaleTypes { get; set; } = new();
+        public string Status { get; set; } = string.Empty;
+        public Location To { get; set; } = new();
+        public int ValidBefore { get; set; }
+        public ServiceInfo Animals { get; set; } = new();
+        public ServiceInfo Luggage { get; set; } = new();
+        public Dictionary<string, object> CarpoolMeta { get; set; } = new();
+        public List<string> CarrierPhones { get; set; } = new();
+        public Dictionary<string, object> Driver { get; set; } = new();
+        public DynamicConfig DynamicConfig { get; set; } = new();
+        public decimal Fee { get; set; }
+        public LegalInfo Legal { get; set; } = new();
+        public decimal OnlinePrice { get; set; }
+        public string RefundConditions { get; set; } = string.Empty;
+        public string RideType { get; set; } = string.Empty;
+        public string RouteName { get; set; } = string.Empty;
+        public int TicketLimit { get; set; }
+        public FrameInfo Frame { get; set; } = new();
+        public int Distance { get; set; }
+        public Coordinates DepartureCoords { get; set; } = new();
+        public Coordinates ArrivalCoords { get; set; } = new();
+        public string ExtraDescription { get; set; } = string.Empty;
+    }
+
+    private class AtlasMeta
+    {
+        public MilesInfo Miles { get; set; } = new();
+    }
+
+    private class MilesInfo
+    {
+        public MilesItem Item { get; set; } = new();
+        public string State { get; set; } = string.Empty;
+        public decimal Cash { get; set; }
+        public decimal Card { get; set; }
+    }
+
+    private class MilesItem
+    {
+        public string Currency { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public decimal PriceOnline { get; set; }
+        public decimal Rate { get; set; }
+        public decimal RateCard { get; set; }
+    }
+
+    private class Bus
+    {
+        public string Mark { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string Reg { get; set; } = string.Empty;
+        public string Branding { get; set; } = string.Empty;
+        public Color Color { get; set; } = new();
+    }
+
+    private class Color
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private class Stop
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Desc { get; set; } = string.Empty;
+        public string Info { get; set; } = string.Empty;
+        public double Longitude { get; set; }
+        public double Latitude { get; set; }
+        public bool Important { get; set; }
+        public string Timezone { get; set; } = string.Empty;
+        public bool Dynamic { get; set; }
+        public bool Seating { get; set; }
+        public string Datetime { get; set; } = string.Empty;
+    }
+
+    private class Freighter
+    {
+        public int Id { get; set; }
+        public string Authority { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string RegDate { get; set; } = string.Empty;
+        public string Unp { get; set; } = string.Empty;
+        public string WorkingTime { get; set; } = string.Empty;
+    }
+
+    private class Location
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Desc { get; set; } = string.Empty;
+        public string Timezone { get; set; } = string.Empty;
+        public string CountryCode { get; set; } = string.Empty;
+    }
+
+    private class ServiceInfo
+    {
+        public bool Available { get; set; }
+        public string Description { get; set; } = string.Empty;
+    }
+
+    private class DynamicConfig
+    {
+        public int PrepareTime { get; set; }
+    }
+
+    private class LegalInfo
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public string Tin { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+    }
+
+    private class FrameInfo
+    {
+        public bool Use { get; set; }
+    }
+
+    private class Coordinates
+    {
+        public double Lat { get; set; }
+        public double Lng { get; set; }
+    }
+    #endregion
+
+    private async Task StartFetching()
+    {
+        if (IsFetching) return;
+        IsFetching = true;
+        HasNotified = false;
+        cts = new CancellationTokenSource();
+
+        try
+        {
+            while (!cts.Token.IsCancellationRequested)
+            {
+                await FetchTrips();
+                await Task.Delay(RefreshInterval * 1000, cts.Token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Ожидаемое исключение при остановке
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при поиске: {ex.Message}";
+        }
+        finally
+        {
+            IsFetching = false;
+        }
+    }
+
+    private void StopFetching()
+    {
+        cts?.Cancel();
+        IsFetching = false;
+        HasNotified = false;
+    }
+
+    private async Task FetchTrips()
+    {
+        try
+        {
+            ErrorMessage = null;
+            var formattedDate = TripDate.ToString("yyyy-MM-dd");
+            var url = $"https://atlasbus.by/api/search?from_id={FromCity}&to_id={ToCity}&calendar_width=30&date={formattedDate}&passengers={Passengers}";
+            Console.WriteLine(url);
+            var response = await Http.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception($"Ошибка HTTP: {response.StatusCode}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var searchResponse = JsonSerializer.Deserialize<SearchResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (searchResponse == null || searchResponse.Rides == null)
+            {
+                throw new Exception("Не удалось распарсить ответ от API.");
+            }
+
+            var newTrips = new List<Ride>();
+            foreach (var ride in searchResponse.Rides)
+            {
+                if (ride.FreeSeats > 0)
+                {
+                    var departure = DateTime.Parse(ride.Departure);
+                    var arrival = DateTime.Parse(ride.Arrival);
+
+                    // Фильтрация по диапазону времени
+                    var startTime = StartTime.ToTimeSpan();
+                    var endTime = EndTime.ToTimeSpan();
+                    var departureTime = departure.TimeOfDay;
+
+                    if (departureTime >= startTime && departureTime <= endTime)
+                    {
+                        ride.Departure = departure.ToString("yyyy-MM-dd HH:mm");
+                        ride.Arrival = arrival.ToString("yyyy-MM-dd HH:mm");
+                        newTrips.Add(ride);
+                    }
+                }
+            }
+
+            // Проверяем, есть ли новые поездки и уведомляли ли уже
+            if (newTrips.Any() && !HasNotified)
+            {
+                // Проигрываем звук уведомления
+                await JS.InvokeVoidAsync("playNotificationSound");
+                IsSoundPlaying = true;
+                HasNotified = true;
+                cts?.Cancel(); // Останавливаем поиск после уведомления
+            }
+
+            Trips = newTrips;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка при поиске: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private async Task StopSound()
+    {
+        await JS.InvokeVoidAsync("stopNotificationSound");
+        IsSoundPlaying = false;
+    }
+}
+
+<style>
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 30px 15px;
+    }
+
+    h1 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .card {
+        border: none;
+        border-radius: 15px;
+        background: #ffffff;
+        transition: transform 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #34495e;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #dfe6e9;
+        padding: 8px 12px;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn {
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+
+    .btn-primary {
+        background-color: #3498db;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #2980b9;
+    }
+
+    .btn-secondary {
+        background-color: #7f8c8d;
+        border: none;
+    }
+
+    .btn-secondary:hover {
+        background-color: #6c757d;
+    }
+
+    .btn-info {
+        background-color: #17a2b8;
+        border: none;
+    }
+
+    .btn-info:hover {
+        background-color: #138496;
+    }
+
+    .btn-warning {
+        background-color: #ffc107;
+        border: none;
+        color: #212529;
+    }
+
+    .btn-warning:hover {
+        background-color: #e0a800;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        background-color: #3498db;
+        color: white;
+        border: none;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .alert-danger {
+        border-radius: 8px;
+        background-color: #ffebee;
+        color: #c0392b;
+        border: none;
+    }
+</style>
+
+<script>
+    let audio = null;
+
+    window.addBootstrap = function () {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
+        document.head.appendChild(link);
+    };
+
+    window.playNotificationSound = function () {
+        audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        audio.play().catch(function(error) {
+            console.log("Error playing sound: ", error);
+        });
+    };
+
+    window.stopNotificationSound = function () {
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+            audio = null;
+        }
+    };
+</script>
