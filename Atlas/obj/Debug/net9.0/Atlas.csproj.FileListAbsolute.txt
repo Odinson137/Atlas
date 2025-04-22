@@ -77,3 +77,4 @@ C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net9.0\refint\Atlas.dll
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net9.0\Atlas.pdb
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net9.0\Atlas.genruntimeconfig.cache
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net9.0\ref\Atlas.dll
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net9.0\Atlas.sourcelink.json
