@@ -31,3 +31,6 @@ C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\refint\Atlas.dll
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\Atlas.pdb
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\Atlas.genruntimeconfig.cache
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\ref\Atlas.dll
+C:\Users\buryy\RiderProjects\Atlas\Atlas\bin\Debug\net8.0\HtmlAgilityPack.dll
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\Atlas.csproj.AssemblyReference.cache
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\Atlas.csproj.Up2Date
