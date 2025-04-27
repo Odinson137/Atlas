@@ -41,6 +41,7 @@
                 <select @bind="FromCity" class="form-control">
                     <option value="c625144">Минск</option>
                     <option value="c626081">Лида</option>
+                    <option value="c630166">Березовка</option>
                 </select>
             </div>
             <div class="col-md-2 mb-3 text-center">
@@ -58,6 +59,7 @@
                 <select @bind="ToCity" class="form-control">
                     <option value="c625144">Минск</option>
                     <option value="c626081">Лида</option>
+                    <option value="c630166">Березовка</option>
                 </select>
             </div>
         </div>
@@ -187,13 +189,14 @@
     private readonly Dictionary<string, string> CityNames = new()
     {
         { "c625144", "Минск" },
+        { "c630166", "Берёзовка" },
         { "c626081", "Лида" }
     };
 
     private readonly Dictionary<string, int> CityToMinskLidaMapping = new()
     {
         { "c625144", 1 }, // Минск
-        { "c626081", 2 }  // Лида
+        { "c626081", 2 },  // Лида
     };
 
     private void SwapCities()
