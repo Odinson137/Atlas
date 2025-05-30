@@ -1,14 +1,30 @@
 using Atlas.Components;
+using Atlas.Data;
+using Atlas.Interfaces;
+using Atlas.Repositories;
+using Atlas.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
+var services = builder.Services;
+services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+services.AddScoped<ITelegramService, TelegramService>();
+services.AddScoped<INotificationService, TelegramNotificationService>();
+services.AddScoped<ITelegramChatRepository, TelegramChatRepository>();
 
-builder.Services.AddHttpClient();
+services.AddHttpClient();
+
+services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 var app = builder.Build();
+
+var telegramService = app.Services.CreateScope().ServiceProvider.GetRequiredService<ITelegramService>();
+await telegramService.StartReceivingAsync();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

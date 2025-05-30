@@ -3,6 +3,8 @@
 @using Atlas.Models
 @using Atlas.Services
 @inject HttpClient Http
+@inject ITelegramService TelegramService
+@inject INotificationService NotificationService
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
@@ -201,9 +203,7 @@
 
     private void SwapCities()
     {
-        var temp = FromCity;
-        FromCity = ToCity;
-        ToCity = temp;
+        (FromCity, ToCity) = (ToCity, FromCity);
     }
 
     private string GetAtlasLink()
@@ -288,6 +288,7 @@
                 await JS.InvokeVoidAsync("playNotificationSound");
                 IsSoundPlaying = true;
                 HasNotified = true;
+                await Notify(newTrips);
             }
 
             Trips = newTrips;
@@ -300,6 +301,25 @@
         }
     }
 
+    private async Task Notify(List<Ride> trips)
+    {
+        var link = SelectedSource == "Atlas" ? GetAtlasLink() : GetMinskLidaAutoFillLink();
+        var message = $"Найдены новые маршрутки!\n" +
+                      $"Маршрут: {CityNames[FromCity]} → {CityNames[ToCity]}\n" +
+                      $"Дата: {TripDate:yyyy-MM-dd}\n" +
+                      $"Найдено поездок: {trips.Count}\n" +
+                      $"[Перейти к маршруту]({link})";
+        try
+        {
+            await NotificationService.Notify(message);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка отправки в Telegram: {ex.Message}";
+            StateHasChanged();
+        }
+    }
+    
     private async Task StopSound()
     {
         await JS.InvokeVoidAsync("stopNotificationSound");
