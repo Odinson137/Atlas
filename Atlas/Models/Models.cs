@@ -39,7 +39,14 @@ public class Ride
     public List<int> FreeSeatsCount { get; set; } = new();
     public Freighter Freighter { get; set; } = new();
     public Location From { get; set; } = new();
-    public string Id { get; set; } = string.Empty;
+
+    private string _id = string.Empty;
+    public string Id
+    {
+        get => _id == string.Empty ? ReservationUrl : _id;
+        set => _id = value;
+    }
+
     public string Name { get; set; } = string.Empty;
     public bool OnlineRefund { get; set; }
     public string Partner { get; set; } = string.Empty;

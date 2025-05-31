@@ -49,10 +49,14 @@
             <div class="col-md-2 mb-3 text-center">
                 <button class="btn btn-switch" @onclick="SwapCities" title="Поменять города местами">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 3H21V8" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M21 3L14 10" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M8 21H3V16" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M3 21L10 14" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 3H21V8" stroke="#3498db" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                        <path d="M21 3L14 10" stroke="#3498db" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                        <path d="M8 21H3V16" stroke="#3498db" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round"/>
+                        <path d="M3 21L10 14" stroke="#3498db" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round"/>
                     </svg>
                 </button>
             </div>
@@ -96,14 +100,7 @@
         </div>
 
         <div class="text-center mt-3">
-            @if (SelectedSource == "Atlas")
-            {
-                <a href="@GetAtlasLink()" target="_blank" class="btn btn-info">Открыть на Atlas</a>
-            }
-            else
-            {
-                <a href="@GetMinskLidaAutoFillLink()" target="_blank" class="btn btn-info">Открыть на Minsk-Lida</a>
-            }
+            <a href="@_routeSearcher!.GeneralLink" target="_blank" class="btn btn-info">@_routeSearcher!.LinkTitle</a>
         </div>
     </div>
 
@@ -140,14 +137,8 @@
                             <td>@trip.FreeSeats</td>
                             <td>@trip.Price</td>
                             <td>
-                                @if (SelectedSource == "Atlas")
-                                {
-                                    <a href="@GetAtlasLink()" target="_blank" class="btn btn-info btn-sm">Перейти к маршруту</a>
-                                }
-                                else
-                                {
-                                    <a href="@trip.ReservationUrl" target="_blank" class="btn btn-info btn-sm">Перейти к маршруту</a>
-                                }
+                                <a href="@_routeSearcher!.GetTripLink(trip.Id)" target="_blank"
+                                   class="btn btn-info btn-sm">Перейти к маршруту</a>
                             </td>
                         </tr>
                     }
@@ -178,7 +169,27 @@
     private int Passengers { get; set; } = 1;
     private string FromCity { get; set; } = "c625144"; // Минск
     private string ToCity { get; set; } = "c626081"; // Лида
-    private string SelectedSource { get; set; } = "Atlas"; // Источник данных
+
+    private string SelectedSource
+    {
+        get
+        {
+            _routeSearcher ??= new AtlasRouteSearcher(Http, CityNames, CityNames[FromCity], CityNames[ToCity],
+                TripDate.ToString("yyyy-MM-dd"), Passengers, FromCity, ToCity);
+            
+            return _routeSearcher!.Title;
+        }
+        set
+        {
+            _routeSearcher = value switch
+            {
+                "Atlas" => new AtlasRouteSearcher(Http, CityNames, CityNames[FromCity], CityNames[ToCity], TripDate.ToString("yyyy-MM-dd"), Passengers, FromCity, ToCity),
+                "MinskLida" => new MinskLidaRouteSearcher(Http, CityNames, CityToMinskLidaMapping),
+                _ => throw new NotSupportedException("Неизвестный источник данных.")
+            };
+        }
+    }
+
     private int RefreshInterval { get; set; } = 60; // Default 60 seconds
     private List<Ride> Trips { get; set; } = new();
     private string? ErrorMessage { get; set; }
@@ -187,6 +198,7 @@
     private bool HasSearched { get; set; }
     private bool IsSoundPlaying { get; set; }
     private CancellationTokenSource? cts;
+    private IRouteSearcher? _routeSearcher;
 
     private readonly Dictionary<string, string> CityNames = new()
     {
@@ -198,38 +210,14 @@
     private readonly Dictionary<string, int> CityToMinskLidaMapping = new()
     {
         { "c625144", 1 }, // Минск
-        { "c626081", 2 },  // Лида
+        { "c626081", 2 }, // Лида
     };
+
+    private string _selectedSource;
 
     private void SwapCities()
     {
         (FromCity, ToCity) = (ToCity, FromCity);
-    }
-
-    private string GetAtlasLink()
-    {
-        var fromCityName = CityNames[FromCity];
-        var toCityName = CityNames[ToCity];
-        var formattedDate = TripDate.ToString("yyyy-MM-dd");
-        return $"https://atlasbus.by/Маршруты/{fromCityName}/{toCityName}?date={formattedDate}&passengers={Passengers}&from={FromCity}&to={ToCity}";
-    }
-
-    private string GetMinskLidaAutoFillLink()
-    {
-        var fromCityId = CityToMinskLidaMapping[FromCity];
-        var toCityId = CityToMinskLidaMapping[ToCity];
-        var formattedDate = TripDate.ToString("yyyy-MM-dd");
-        return $"https://bilet.minsk-lida.by";
-    }
-
-    private IRouteSearcher GetRouteSearcher()
-    {
-        return SelectedSource switch
-        {
-            "Atlas" => new AtlasRouteSearcher(Http, CityNames),
-            "MinskLida" => new MinskLidaRouteSearcher(Http, CityNames, CityToMinskLidaMapping),
-            _ => throw new NotSupportedException("Неизвестный источник данных.")
-        };
     }
 
     private async Task StartFetching()
@@ -277,8 +265,7 @@
         try
         {
             ErrorMessage = null;
-            var routeSearcher = GetRouteSearcher();
-            var newTrips = await routeSearcher.SearchRoutesAsync(FromCity, ToCity, TripDate, Passengers, StartTime, EndTime);
+            var newTrips = await _routeSearcher!.SearchRoutesAsync(FromCity, ToCity, TripDate, Passengers, StartTime, EndTime);
 
             // Сортируем поездки по времени отправления
             newTrips = newTrips.OrderBy(t => DateTime.Parse(t.Departure)).ToList();
@@ -304,12 +291,12 @@
 
     private async Task Notify(List<Ride> trips)
     {
-        var link = SelectedSource == "Atlas" ? GetAtlasLink() : GetMinskLidaAutoFillLink();
+        var link = _routeSearcher!.MessageLink;
         var message = $"Найдены новые маршрутки!\n" +
                       $"Маршрут: {CityNames[FromCity]} → {CityNames[ToCity]}\n" +
                       $"Дата: {TripDate:yyyy-MM-dd}\n" +
                       $"Найдено поездок: {trips.Count}\n" +
-                      $"[Перейти к маршруту]({link})";
+                      $"{link}";
         try
         {
             await NotificationService.Notify(message);
@@ -320,12 +307,13 @@
             StateHasChanged();
         }
     }
-    
+
     private async Task StopSound()
     {
         await JS.InvokeVoidAsync("stopNotificationSound");
         IsSoundPlaying = false;
     }
+
 }
 
 <style>

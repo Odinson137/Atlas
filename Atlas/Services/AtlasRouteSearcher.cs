@@ -8,17 +8,45 @@ public class AtlasRouteSearcher : IRouteSearcher
 {
     private readonly HttpClient _http;
     private readonly Dictionary<string, string> _cityNames;
+    private readonly string _fromCityName;
+    private string _toCityName;
+    private string _formattedDate;
+    private int _passengers;
+    private string _fromCity;
+    private string _toCity;
+    private List<Ride> _atlasTrips;
 
-    public AtlasRouteSearcher(HttpClient http, Dictionary<string, string> cityNames)
+    public AtlasRouteSearcher(HttpClient http, Dictionary<string, string> cityNames, string fromCityName,
+        string toCityName, string formattedDate, int passengers, string fromCity, string toCity)
     {
         _http = http;
         _cityNames = cityNames;
+        _fromCityName = fromCityName;
+        _toCityName = toCityName;
+        _formattedDate = formattedDate;
+        _passengers = passengers;
+        _fromCity = fromCity;
+        _toCity = toCity;
     }
 
-    public async Task<List<Ride>> SearchRoutesAsync(string fromCity, string toCity, DateTime date, int passengers, TimeOnly startTime, TimeOnly endTime)
+    public string Title => "Atlas";
+
+    public string GeneralLink =>
+        $"https://atlasbus.by/Маршруты/{_fromCityName}/{_toCityName}?date={_formattedDate}&passengers={_passengers}&from={_fromCity}&to={_toCity}";
+
+    public string GetTripLink(string tripId) =>
+        $"https://atlasbus.by/booking/{tripId}?passengers=1&from={_fromCity}&to={_toCity}&date={_formattedDate}&pickup=&discharge=";
+
+    public string LinkTitle => "Открыть на Atlas";
+
+    public string MessageLink => string.Join("\n", _atlasTrips.Select(c => $"Новая поездка: {c.Departure.Split(" ")[1]}: [Перейти к маршруту]({GetTripLink(c.Id)})"));
+
+    public async Task<List<Ride>> SearchRoutesAsync(string fromCity, string toCity, DateTime date, int passengers,
+        TimeOnly startTime, TimeOnly endTime)
     {
         var formattedDate = date.ToString("yyyy-MM-dd");
-        var url = $"https://atlasbus.by/api/search?from_id={fromCity}&to_id={toCity}&calendar_width=30&date={formattedDate}&passengers={passengers}";
+        var url =
+            $"https://atlasbus.by/api/search?from_id={fromCity}&to_id={toCity}&calendar_width=30&date={formattedDate}&passengers={passengers}";
         var response = await _http.GetAsync(url);
 
         if (!response.IsSuccessStatusCode)
@@ -27,14 +55,15 @@ public class AtlasRouteSearcher : IRouteSearcher
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        var searchResponse = JsonSerializer.Deserialize<SearchResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var searchResponse = JsonSerializer.Deserialize<SearchResponse>(content,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         if (searchResponse == null || searchResponse.Rides == null)
         {
             throw new Exception("Не удалось распарсить ответ от API Atlas.");
         }
 
-        var atlasTrips = new List<Ride>();
+        _atlasTrips = [];
         foreach (var ride in searchResponse.Rides)
         {
             if (ride.FreeSeats > 0)
@@ -52,11 +81,11 @@ public class AtlasRouteSearcher : IRouteSearcher
                     ride.Arrival = arrival.ToString("yyyy-MM-dd HH:mm");
                     ride.From = new Location { Desc = _cityNames[fromCity] };
                     ride.To = new Location { Desc = _cityNames[toCity] };
-                    atlasTrips.Add(ride);
+                    _atlasTrips.Add(ride);
                 }
             }
         }
 
-        return atlasTrips;
+        return _atlasTrips;
     }
 }

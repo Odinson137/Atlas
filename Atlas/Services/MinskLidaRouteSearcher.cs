@@ -10,6 +10,7 @@ public class MinskLidaRouteSearcher : IRouteSearcher
     private readonly HttpClient _http;
     private readonly Dictionary<string, string> _cityNames;
     private readonly Dictionary<string, int> _cityToMinskLidaMapping;
+    private List<Ride> _minskLidaTrips;
 
     public MinskLidaRouteSearcher(HttpClient http, Dictionary<string, string> cityNames, Dictionary<string, int> cityToMinskLidaMapping)
     {
@@ -17,6 +18,13 @@ public class MinskLidaRouteSearcher : IRouteSearcher
         _cityNames = cityNames;
         _cityToMinskLidaMapping = cityToMinskLidaMapping;
     }
+
+    public string Title => "MinskLida";
+    public string GeneralLink => "https://bilet.minsk-lida.by";
+    public string GetTripLink(string tripId) => _minskLidaTrips.Where(c => c.Id == tripId).Select(c => c.Id).Single();
+
+    public string LinkTitle => "Открыть на MinskLida";
+    public string MessageLink => string.Join("\n", _minskLidaTrips.Select(c => $"Новая поездка: {c.Departure.Split(" ")[1]}: [Перейти к маршруту]({GeneralLink})"));
 
     public async Task<List<Ride>> SearchRoutesAsync(string fromCity, string toCity, DateTime date, int passengers, TimeOnly startTime, TimeOnly endTime)
     {
@@ -34,7 +42,7 @@ public class MinskLidaRouteSearcher : IRouteSearcher
         var content = await response.Content.ReadFromJsonAsync<MinskLidaContent>();
 
         // Парсинг HTML с помощью HtmlAgilityPack
-        var minskLidaTrips = new List<Ride>();
+        _minskLidaTrips = [];
         var htmlDoc = new HtmlDocument();
         htmlDoc.LoadHtml(content!.Html);
 
@@ -43,7 +51,7 @@ public class MinskLidaRouteSearcher : IRouteSearcher
         if (routeNodes == null || !routeNodes.Any())
         {
             Console.WriteLine("Маршруты не найдены.");
-            return minskLidaTrips;
+            return _minskLidaTrips;
         }
 
         foreach (var routeNode in routeNodes)
@@ -122,7 +130,7 @@ public class MinskLidaRouteSearcher : IRouteSearcher
                         To = new Location { Desc = toLocation },
                         Distance = distance
                     };
-                    minskLidaTrips.Add(ride);
+                    _minskLidaTrips.Add(ride);
                 }
             }
             catch (Exception ex)
@@ -132,7 +140,7 @@ public class MinskLidaRouteSearcher : IRouteSearcher
             }
         }
 
-        return minskLidaTrips;
+        return _minskLidaTrips;
     }
 }
 
