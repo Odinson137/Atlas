@@ -27,7 +27,7 @@ public class TelegramService : ITelegramService
 
         try
         {
-            var chats = await _telegramChatRepository.GetAllLocalChatsAsync();
+            var chats = await _telegramChatRepository.GetAllLocalEnableChatsAsync();
             foreach (var chat in chats)
                 await _botClient.SendMessage(
                     chatId: new ChatId(chat.ChatId),
@@ -44,7 +44,8 @@ public class TelegramService : ITelegramService
     public async Task StartReceivingAsync()
     {
         await _botClient.SetMyCommands([
-            new BotCommand { Command = "start", Description = "Register with the bot" }
+            new BotCommand { Command = "start", Description = "Регистрацию или включение уведомлений" },
+            new BotCommand { Command = "stop", Description = "Отключение уведомлений" }
         ]);
 
         _botClient.StartReceiving(
@@ -73,35 +74,41 @@ public class TelegramService : ITelegramService
                     text: "Welcome! You are now registered with the bot.",
                     cancellationToken: cancellationToken
                 );
-            }
-            else
-            {
                 await botClient.SendMessage(
                     chatId: chatId,
-                    text: "You are already registered!",
+                    text: "Чтобы отменить отправку сообщений в telegram, отправьте команду /stop",
                     cancellationToken: cancellationToken
                 );
+                return;
             }
+
+            await _telegramChatRepository.EnableNotificationAsync(chatId);
+
+            await botClient.SendMessage(
+                chatId: chatId,
+                text: "Уведомления через telegram успешно включены)",
+                cancellationToken: cancellationToken
+            );
         }
         else if (message.Text.StartsWith("/stop"))
         {
-            // if (!await _telegramChatRepository.AnyChatAsync(chatId))
-            // {
-            //     await _telegramChatRepository.AddChatAsync(chatId);
-            //     await botClient.SendMessage(
-            //         chatId: chatId,
-            //         text: "Welcome! You are now registered with the bot.",
-            //         cancellationToken: cancellationToken
-            //     );
-            // }
-            // else
-            // {
-            //     await botClient.SendMessage(
-            //         chatId: chatId,
-            //         text: "You are already registered!",
-            //         cancellationToken: cancellationToken
-            //     );
-            // }
+            if (!await _telegramChatRepository.AnyChatAsync(chatId))
+            {
+                await botClient.SendMessage(
+                    chatId: chatId,
+                    text: "Вас нет в системе. Для регистрации отправьте команду /start",
+                    cancellationToken: cancellationToken
+                );
+                return;
+            }
+
+            await _telegramChatRepository.CancelNotificationAsync(chatId);
+
+            await botClient.SendMessage(
+                chatId: chatId,
+                text: "Уведомления через telegram успешно выключены(",
+                cancellationToken: cancellationToken
+            );
         }
     }
 

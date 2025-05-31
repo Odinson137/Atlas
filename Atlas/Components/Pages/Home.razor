@@ -263,12 +263,13 @@
         }
     }
 
-    private void StopFetching()
+    private async Task StopFetching()
     {
-        cts?.Cancel();
+        await cts?.CancelAsync()!;
         IsFetching = false;
         HasNotified = false;
         HasSearched = true;
+        await StopSound();
     }
 
     private async Task FetchTrips()
