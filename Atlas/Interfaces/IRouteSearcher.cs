@@ -10,9 +10,11 @@ public interface IRouteSearcher
 
     string GetTripLink(string tripId);
     
-    string LinkTitle { get; }
+    Dictionary<int, string> Cities { get; }
     
     string MessageLink { get; }
+
+    // void Init(DateTime tripDate, int passengers, int fromCity, int toCity);
     
-    Task<List<Ride>> SearchRoutesAsync(string fromCity, string toCity, DateTime date, int passengers, TimeOnly startTime, TimeOnly endTime);
+    Task<List<Ride>> SearchRoutesAsync(int fromCityValue, int toCityValue, DateTime date, int passengers, TimeOnly startTime, TimeOnly endTime);
 }

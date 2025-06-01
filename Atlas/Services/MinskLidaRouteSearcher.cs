@@ -8,30 +8,39 @@ namespace Atlas.Services;
 public class MinskLidaRouteSearcher : IRouteSearcher
 {
     private readonly HttpClient _http;
-    private readonly Dictionary<string, string> _cityNames;
-    private readonly Dictionary<string, int> _cityToMinskLidaMapping;
-    private List<Ride> _minskLidaTrips;
+    private readonly Dictionary<string, string> _cityNames = new();
+    private List<Ride> _minskLidaTrips = [];
 
-    public MinskLidaRouteSearcher(HttpClient http, Dictionary<string, string> cityNames, Dictionary<string, int> cityToMinskLidaMapping)
+    public MinskLidaRouteSearcher(HttpClient http)
     {
         _http = http;
-        _cityNames = cityNames;
-        _cityToMinskLidaMapping = cityToMinskLidaMapping;
     }
 
     public string Title => "MinskLida";
     public string GeneralLink => "https://bilet.minsk-lida.by";
-    public string GetTripLink(string tripId) => _minskLidaTrips.Where(c => c.Id == tripId).Select(c => c.Id).Single();
 
-    public string LinkTitle => "Открыть на MinskLida";
-    public string MessageLink => string.Join("\n", _minskLidaTrips.Select(c => $"Новая поездка: {c.Departure.Split(" ")[1]}: [Перейти к маршруту]({GeneralLink})"));
-
-    public async Task<List<Ride>> SearchRoutesAsync(string fromCity, string toCity, DateTime date, int passengers, TimeOnly startTime, TimeOnly endTime)
+    public string GetTripLink(string tripId) =>
+        // _minskLidaTrips.Where(c => c.Id == tripId).Select(c => c.Id).SingleOrDefault() ?? string.Empty;
+        GeneralLink;
+    
+    public Dictionary<int, string> Cities => new()
     {
-        var fromCityId = _cityToMinskLidaMapping[fromCity];
-        var toCityId = _cityToMinskLidaMapping[toCity];
+        { 1, "Минск" },
+        { 3, "Лида" },
+    };
+
+    public string MessageLink => string.Join("\n",
+        _minskLidaTrips.Select(c =>
+            $"Новая поездка: {c.Departure.Split(" ")[1]}: [Перейти к маршруту]({GeneralLink})"));
+
+    public async Task<List<Ride>> SearchRoutesAsync(int fromCityValue, int toCityValue, DateTime date, int passengers,
+        TimeOnly startTime, TimeOnly endTime)
+    {
+        var fromCityId = fromCityValue;
+        var toCityId = toCityValue;
         var formattedDate = date.ToString("yyyy-MM-dd");
-        var url = $"https://bilet.minsk-lida.by/schedules?station_from_id=0&station_to_id=0&frame_id=&city_from_id={fromCityId}&places={passengers}&city_to_id={toCityId}&date={formattedDate}";
+        var url =
+            $"https://bilet.minsk-lida.by/schedules?station_from_id=0&station_to_id=0&frame_id=&city_from_id={fromCityId}&places={passengers}&city_to_id={toCityId}&date={formattedDate}";
 
         var response = await _http.GetAsync(url);
         if (!response.IsSuccessStatusCode)
@@ -42,16 +51,17 @@ public class MinskLidaRouteSearcher : IRouteSearcher
         var content = await response.Content.ReadFromJsonAsync<MinskLidaContent>();
 
         // Парсинг HTML с помощью HtmlAgilityPack
-        _minskLidaTrips = [];
+        var minskLidaTrips = new List<Ride>();
         var htmlDoc = new HtmlDocument();
         htmlDoc.LoadHtml(content!.Html);
 
         // Поиск маршрутов (учитываем пробелы в классе и исключаем маршруты с is-disabled)
-        var routeNodes = htmlDoc.DocumentNode.SelectNodes("//div[contains(@class, 'nf-route') and contains(@class, 'js_route') and not(contains(@class, 'is-disabled'))]");
+        var routeNodes = htmlDoc.DocumentNode.SelectNodes(
+            "//div[contains(@class, 'nf-route') and contains(@class, 'js_route') and not(contains(@class, 'is-disabled'))]");
         if (routeNodes == null || !routeNodes.Any())
         {
             Console.WriteLine("Маршруты не найдены.");
-            return _minskLidaTrips;
+            return minskLidaTrips;
         }
 
         foreach (var routeNode in routeNodes)
@@ -85,7 +95,9 @@ public class MinskLidaRouteSearcher : IRouteSearcher
                 if (!decimal.TryParse(priceText, out var price)) continue;
 
                 // Извлекаем URL бронирования
-                var reservationButton = routeNode.SelectSingleNode(".//button[contains(@class, 'reservationButton') and contains(@class, 'js_get-bus')]");
+                var reservationButton =
+                    routeNode.SelectSingleNode(
+                        ".//button[contains(@class, 'reservationButton') and contains(@class, 'js_get-bus')]");
                 if (reservationButton == null) continue;
                 var reservationUrl = reservationButton.GetAttributeValue("data-url", string.Empty);
 
@@ -95,7 +107,9 @@ public class MinskLidaRouteSearcher : IRouteSearcher
                 var carrier = carrierNode.InnerText.Trim();
 
                 // Извлекаем расстояние
-                var distanceNode = routeNode.SelectSingleNode(".//div[contains(@class, 'nf-route-description-item') and contains(text(), 'км')]");
+                var distanceNode =
+                    routeNode.SelectSingleNode(
+                        ".//div[contains(@class, 'nf-route-description-item') and contains(text(), 'км')]");
                 if (distanceNode == null) continue;
                 var distanceText = distanceNode.InnerText.Replace("км", "").Trim();
                 if (!int.TryParse(distanceText, out var distance)) continue;
@@ -130,7 +144,7 @@ public class MinskLidaRouteSearcher : IRouteSearcher
                         To = new Location { Desc = toLocation },
                         Distance = distance
                     };
-                    _minskLidaTrips.Add(ride);
+                    minskLidaTrips.Add(ride);
                 }
             }
             catch (Exception ex)
@@ -140,15 +154,14 @@ public class MinskLidaRouteSearcher : IRouteSearcher
             }
         }
 
+        _minskLidaTrips = minskLidaTrips;
         return _minskLidaTrips;
     }
 }
 
 class MinskLidaContent
 {
-    [JsonPropertyName("result")]
-    public string Result { get; set; } = string.Empty;
-    
-    [JsonPropertyName("html")]
-    public string Html { get; set; } = string.Empty;
+    [JsonPropertyName("result")] public string Result { get; set; } = string.Empty;
+
+    [JsonPropertyName("html")] public string Html { get; set; } = string.Empty;
 }

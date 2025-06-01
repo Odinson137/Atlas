@@ -3,7 +3,6 @@
 @using Atlas.Models
 @using Atlas.Services
 @inject HttpClient Http
-@inject ITelegramService TelegramService
 @inject INotificationService NotificationService
 @inject IJSRuntime JS
 @rendermode InteractiveServer
@@ -40,10 +39,10 @@
         <div class="row align-items-end">
             <div class="col-md-5 mb-3">
                 <label class="form-label">Откуда:</label>
-                <select @bind="FromCity" class="form-control">
-                    <option value="c625144">Минск</option>
-                    <option value="c626081">Лида</option>
-                    <option value="c630166">Березовка</option>
+                <select @bind="FromCityValue" class="form-control">
+                    <option value="1">Минск</option>
+                    <option value="2">Березовка</option>
+                    <option value="3">Лида</option>
                 </select>
             </div>
             <div class="col-md-2 mb-3 text-center">
@@ -62,10 +61,13 @@
             </div>
             <div class="col-md-5 mb-3">
                 <label class="form-label">Куда:</label>
-                <select @bind="ToCity" class="form-control">
-                    <option value="c625144">Минск</option>
-                    <option value="c626081">Лида</option>
-                    <option value="c630166">Березовка</option>
+                <select @bind="ToCityValue" class="form-control">
+                    @* @foreach (var city in OrderedCities) *@
+                    @* { *@
+                    @* } *@
+                    <option value="1">Минск</option>
+                    <option value="2">Березовка</option>
+                    <option value="3">Лида</option>
                 </select>
             </div>
         </div>
@@ -100,7 +102,8 @@
         </div>
 
         <div class="text-center mt-3">
-            <a href="@_routeSearcher!.GeneralLink" target="_blank" class="btn btn-info">@_routeSearcher!.LinkTitle</a>
+            <a href="@_routeSearcher.GeneralLink" target="_blank" class="btn btn-info">Открыть
+                на @_routeSearcher.Title</a>
         </div>
     </div>
 
@@ -137,7 +140,7 @@
                             <td>@trip.FreeSeats</td>
                             <td>@trip.Price</td>
                             <td>
-                                <a href="@_routeSearcher!.GetTripLink(trip.Id)" target="_blank"
+                                <a href="@_routeSearcher.GetTripLink(trip.Id)" target="_blank"
                                    class="btn btn-info btn-sm">Перейти к маршруту</a>
                             </td>
                         </tr>
@@ -167,26 +170,22 @@
     private TimeOnly StartTime { get; set; } = TimeOnly.Parse("00:00");
     private TimeOnly EndTime { get; set; } = TimeOnly.Parse("23:59");
     private int Passengers { get; set; } = 1;
-    private string FromCity { get; set; } = "c625144"; // Минск
-    private string ToCity { get; set; } = "c626081"; // Лида
+    private int FromCityValue { get; set; } = 1; // Минск
+    private int ToCityValue { get; set; } = 3; // Лида
 
     private string SelectedSource
     {
-        get
-        {
-            _routeSearcher ??= new AtlasRouteSearcher(Http, CityNames, CityNames[FromCity], CityNames[ToCity],
-                TripDate.ToString("yyyy-MM-dd"), Passengers, FromCity, ToCity);
-            
-            return _routeSearcher!.Title;
-        }
+        get => _routeSearcher.Title;
         set
         {
             _routeSearcher = value switch
             {
-                "Atlas" => new AtlasRouteSearcher(Http, CityNames, CityNames[FromCity], CityNames[ToCity], TripDate.ToString("yyyy-MM-dd"), Passengers, FromCity, ToCity),
-                "MinskLida" => new MinskLidaRouteSearcher(Http, CityNames, CityToMinskLidaMapping),
+                "Atlas" => new AtlasRouteSearcher(Http),
+                "MinskLida" => new MinskLidaRouteSearcher(Http),
                 _ => throw new NotSupportedException("Неизвестный источник данных.")
             };
+            Trips = [];
+            StateHasChanged();
         }
     }
 
@@ -198,26 +197,19 @@
     private bool HasSearched { get; set; }
     private bool IsSoundPlaying { get; set; }
     private CancellationTokenSource? cts;
-    private IRouteSearcher? _routeSearcher;
+    private IRouteSearcher _routeSearcher = null!;
 
-    private readonly Dictionary<string, string> CityNames = new()
+    private Dictionary<int, string> _cities => _routeSearcher.Cities;
+
+    protected override void OnInitialized()
     {
-        { "c625144", "Минск" },
-        { "c630166", "Берёзовка" },
-        { "c626081", "Лида" }
-    };
-
-    private readonly Dictionary<string, int> CityToMinskLidaMapping = new()
-    {
-        { "c625144", 1 }, // Минск
-        { "c626081", 2 }, // Лида
-    };
-
-    private string _selectedSource;
+        _routeSearcher = new AtlasRouteSearcher(Http);
+    }
 
     private void SwapCities()
     {
-        (FromCity, ToCity) = (ToCity, FromCity);
+        (FromCityValue, ToCityValue) = (ToCityValue, FromCityValue);
+        StateHasChanged();
     }
 
     private async Task StartFetching()
@@ -227,6 +219,7 @@
         HasNotified = false;
         HasSearched = false;
         cts = new CancellationTokenSource();
+        Trips = [];
 
         try
         {
@@ -265,7 +258,7 @@
         try
         {
             ErrorMessage = null;
-            var newTrips = await _routeSearcher!.SearchRoutesAsync(FromCity, ToCity, TripDate, Passengers, StartTime, EndTime);
+            var newTrips = await _routeSearcher.SearchRoutesAsync(FromCityValue, ToCityValue, TripDate, Passengers, StartTime, EndTime);
 
             // Сортируем поездки по времени отправления
             newTrips = newTrips.OrderBy(t => DateTime.Parse(t.Departure)).ToList();
@@ -284,16 +277,16 @@
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Ошибка при поиске: {ex.Message}";
+            ErrorMessage = $"Ошибка при поиске: {ex.Message}. Возможно такого маршрута нет на сайте";
             StateHasChanged();
         }
     }
 
     private async Task Notify(List<Ride> trips)
     {
-        var link = _routeSearcher!.MessageLink;
+        var link = _routeSearcher.MessageLink;
         var message = $"Найдены новые маршрутки!\n" +
-                      $"Маршрут: {CityNames[FromCity]} → {CityNames[ToCity]}\n" +
+                      $"Маршрут: {_cities[FromCityValue]} → {_cities[ToCityValue]}\n" +
                       $"Дата: {TripDate:yyyy-MM-dd}\n" +
                       $"Найдено поездок: {trips.Count}\n" +
                       $"{link}";
