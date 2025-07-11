@@ -20,12 +20,6 @@ C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\scopedcss\projectbundl
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets.build.json
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets\msbuild.Atlas.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets\msbuild.Atlas.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets\msbuild.build.Atlas.props
-C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.Atlas.props
-C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.Atlas.props
-C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets.pack.json
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\Atlas.dll
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\refint\Atlas.dll
 C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\Atlas.pdb
@@ -79,3 +73,8 @@ C:\Users\buryy\RiderProjects\Atlas\Atlas\bin\Debug\net8.0\runtimes\win-arm64\nat
 C:\Users\buryy\RiderProjects\Atlas\Atlas\bin\Debug\net8.0\runtimes\win-x64\native\e_sqlite3.dll
 C:\Users\buryy\RiderProjects\Atlas\Atlas\bin\Debug\net8.0\runtimes\win-x86\native\e_sqlite3.dll
 C:\Users\buryy\RiderProjects\Atlas\Atlas\bin\Debug\net8.0\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\rjimswa.dswa.cache.json
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+C:\Users\buryy\RiderProjects\Atlas\Atlas\obj\Debug\net8.0\staticwebassets.build.json.cache

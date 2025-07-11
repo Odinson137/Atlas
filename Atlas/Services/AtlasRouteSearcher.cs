@@ -37,13 +37,14 @@ public class AtlasRouteSearcher : IRouteSearcher
         $"https://atlasbus.by/Маршруты/{_fromCityName}/{_toCityName}?date={_formattedDate}&passengers={_passengers}&from={_fromCityValue}&to={_toCityValue}";
 
     public string GetTripLink(string tripId) =>
-        $"https://atlasbus.by/booking/{tripId}?passengers=1&from={_fromCityValue}&to={_toCityValue}&date={_formattedDate}&pickup=&discharge=";
+        $"https://atlasbus.by/booking/{tripId}?passengers={_passengers}&from={_fromCityValue}&to={_toCityValue}&date={_formattedDate}&pickup=&discharge=";
 
     public Dictionary<int, string> Cities => new()
     {
         { 1, "Минск" },
         { 2, "Берёзовка" },
-        { 3, "Лида" }
+        { 3, "Лида" },
+        { 4, "Браслав" },
     };
 
     private readonly Dictionary<int, string> _cityToAtlasMapping = new()
@@ -51,6 +52,7 @@ public class AtlasRouteSearcher : IRouteSearcher
         { 1, "c625144" }, // Минск
         { 2, "c630166" }, // Берёзовка
         { 3, "c626081" }, // Лида
+        { 4, "c629640" }, // Браслав
     };
     
     public string MessageLink => string.Join("\n",
